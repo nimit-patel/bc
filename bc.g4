@@ -1,4 +1,5 @@
 grammar Bc;
+// import lexerRules;
 
 @header {
     import java.util.*;
@@ -8,9 +9,9 @@ grammar Bc;
 @parser::members {
     private static final BigDecimal ZERO = BigDecimal.ZERO;
     private static final BigDecimal ONE = BigDecimal.ONE;
-    private int scale = 20;
+    private int scale = 0;
     //default precision is set to 20 with rounding mode down
-    private MathContext mathContext = new MathContext(scale, RoundingMode.DOWN); 
+    private MathContext mathContext = new MathContext(20, RoundingMode.DOWN); 
     Map<String, BigDecimal> varMap = new HashMap<String, BigDecimal>();
 
     public BigDecimal eval(BigDecimal left, BigDecimal right, String op){
@@ -60,8 +61,6 @@ grammar Bc;
         return result;
     }
 
-    
-
     public BigDecimal sin(BigDecimal value){
         return new BigDecimal(Math.sin(value.doubleValue()), mathContext);
     }
@@ -78,7 +77,7 @@ grammar Bc;
         return new BigDecimal(Math.exp(value.doubleValue()), mathContext);
     }
 
-    /* Source : StackOverflow */
+    /* source: StackOverflow */
     public BigDecimal sqrt(BigDecimal num){
         if(num.equals(ZERO))
             return ZERO;
@@ -115,33 +114,29 @@ grammar Bc;
 
 }
 
-bc          : calc+;
+bc          : calc;
 
-calc        : expression{print($expression.result);}
+calc        : expression                    { print($expression.result); }
             ;
 
-// var <op>= expr need to cover this one!
 expression returns [BigDecimal result]
-            : op = ( INC | DEC) variable
-                {$result = evalUnary($variable.text, $op.text, false);}
-            | variable op = ( INC | DEC)
-                {$result = evalUnary($variable.text, $op.text, true);}
-            | SUB variable
-                {$result = eval(BigDecimal.ZERO, $variable.value, $SUB.text);}
-            | left = expression POW right = expression
-                {$result = eval($left.result, $right.result, $POW.text);}
+            : op = ( INC | DEC) variable    { $result = evalUnary($variable.text, $op.text, false);}
+            | variable op = ( INC | DEC)    { $result = evalUnary($variable.text, $op.text, true);}
+            | SUB variable                  { $result = eval(BigDecimal.ZERO, $variable.value, $SUB.text);}
+            | left = expression POW right = expression 
+                                            {$result = eval($left.result, $right.result, $POW.text);}
             | left = expression op = (MUL | DIV) right = expression 
-                {$result = eval($left.result, $right.result, $op.text);}
+                                            { $result = eval($left.result, $right.result, $op.text);}
             | left = expression MOD right = expression
-                {$result = eval($left.result, $right.result, $MOD.text);}
+                                            { $result = eval($left.result, $right.result, $MOD.text);}
             | left = expression op = (ADD | SUB) right = expression
-                {$result = eval($left.result, $right.result, $op.text);}
+                                            { $result = eval($left.result, $right.result, $op.text);}
             | NOT expression
-                {$result = evalBoolean($expression.result, $expression.result, $NOT.text);}
+                                            { $result = evalBoolean($expression.result, $expression.result, $NOT.text);}
             | left = expression AND right = expression
-                {$result = evalBoolean($left.result, $right.result, $AND.text);}
+                                            { $result = evalBoolean($left.result, $right.result, $AND.text);}
             | left = expression OR right = expression
-                {$result = evalBoolean($left.result, $right.result, $OR.text);}
+                                            { $result = evalBoolean($left.result, $right.result, $OR.text);}
             | LPAREN expression RPAREN      { $result = $expression.result;}
             | READ LPAREN expression RPAREN { $result = $expression.result;}
             | SQRT LPAREN expression RPAREN { $result = sqrt($expression.result);}
@@ -150,6 +145,8 @@ expression returns [BigDecimal result]
             | LOG LPAREN expression RPAREN  { $result = log($expression.result);}
             | EXP LPAREN expression RPAREN  { $result = exp($expression.result);}
             | variable                      { $result = $variable.value;}
+            | variable op = (MUL | DIV | ADD | SUB | MOD | POW) EQUAL expression
+                                            { varMap.put($variable.text, eval($variable.value, $expression.result, $op.text)); }
             | variable EQUAL expression     { varMap.put($variable.text, $expression.result);}
             | variable EQUAL read           {
                                               $result = $read.value;
@@ -161,16 +158,23 @@ expression returns [BigDecimal result]
             
 
 variable returns [BigDecimal value] 
-            : VARIABLE  { $value = varMap.getOrDefault($VARIABLE.text, new BigDecimal(0)); }
+            : VARIABLE                      { $value = varMap.getOrDefault($VARIABLE.text, new BigDecimal(0)); }
             ;
 
 number returns [BigDecimal value]
-            : NUMBER {  $value = new BigDecimal($NUMBER.text); }
+            : NUMBER                        { $value = new BigDecimal($NUMBER.text); }
             ;
 read  returns [BigDecimal value]
-            : READ number {  $value = $number.value; }
+            : READ number                   {  $value = $number.value; }
             ;
 
+
+/*
+    TO DO: print expressions
+    ->  Statements: expressions (print value on the screen when executed), 
+ */
+
+ 
 /* Special functions */
 SCALE       : 'scale'
             ;
@@ -261,17 +265,3 @@ SLCMNT      : '#'.*?'\n'       ->  skip;
 MLCMNT      : '/*'.*?'*/'       ->  skip;
 
 WS          : [ \t\r\n]+        ->  skip ;
-
-
-/*
-
-    Comments:
-        -> Basic expressions with variables
-        -> Boolean Expressions
-        -> Precedence
-    Special Expression: read and sqrt (implementation)
-        ->  Statements: expressions (print value on the screen when executed), print expressions
-        -> Math library functions: s, c, l, e (no need for a and j)
-
-
- */
