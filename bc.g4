@@ -60,7 +60,6 @@ grammar Bc;
         return result;
     }
 
-    /* to do precision set to 20 digits only */
     public BigDecimal sin(BigDecimal value){
         return new BigDecimal(Math.sin(value.doubleValue()), mathContext);
     }
@@ -90,9 +89,7 @@ grammar Bc;
 
 bc          : calc+;
 
-calc        : expression  {print($expression.result);}
-            | SLCMNT
-            | MLCMNT
+calc        : expression{print($expression.result);}
             ;
 
 // var <op>= expr need to cover this one!
@@ -227,7 +224,7 @@ NUMBER      : [0-9]+('.'[0-9]+)?;
 NEWLINE     : '\r'?'\n';
 
 /* Mathces single line comment */
-SLCMNT      : '#'.*?            ->  skip;
+SLCMNT      : '#'.*?'\n'       ->  skip;
 
 /* Matches multiline comment */
 MLCMNT      : '/*'.*?'*/'       ->  skip;
