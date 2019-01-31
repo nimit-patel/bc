@@ -60,6 +60,8 @@ grammar Bc;
         return result;
     }
 
+    
+
     public BigDecimal sin(BigDecimal value){
         return new BigDecimal(Math.sin(value.doubleValue()), mathContext);
     }
@@ -74,6 +76,32 @@ grammar Bc;
 
     public BigDecimal exp(BigDecimal value){
         return new BigDecimal(Math.exp(value.doubleValue()), mathContext);
+    }
+
+    /* Source : StackOverflow */
+    public BigDecimal sqrt(BigDecimal num){
+        if(num.equals(ZERO))
+            return ZERO;
+
+        RoundingMode mode = RoundingMode.FLOOR;
+        BigDecimal sqrt = new BigDecimal(1);
+        BigDecimal store = new BigDecimal(num.toString());
+        boolean first = true;
+        sqrt.setScale(scale, mode);
+
+        do{
+            if (!first){
+                store = new BigDecimal(sqrt.toString());
+            }else{
+                first = false;
+            }
+
+            store.setScale(scale, mode);
+            sqrt = num.divide(store, scale, mode).add(store).divide(
+                    BigDecimal.valueOf(2), scale, mode);
+        }while (!store.equals(sqrt));
+
+        return sqrt.setScale(scale, mode);
     }
 
     public void setScale(int newScale){
@@ -94,14 +122,10 @@ calc        : expression{print($expression.result);}
 
 // var <op>= expr need to cover this one!
 expression returns [BigDecimal result]
-            : INC variable
-                {$result = evalUnary($variable.text, $INC.text, false);}
-            | DEC variable
-                {$result = evalUnary($variable.text, $DEC.text, false);}
-            | variable INC 
-                {$result = evalUnary($variable.text, $INC.text, true);}
-            | variable DEC 
-                {$result = evalUnary($variable.text, $DEC.text, true);}
+            : op = ( INC | DEC) variable
+                {$result = evalUnary($variable.text, $op.text, false);}
+            | variable op = ( INC | DEC)
+                {$result = evalUnary($variable.text, $op.text, true);}
             | SUB variable
                 {$result = eval(BigDecimal.ZERO, $variable.value, $SUB.text);}
             | left = expression POW right = expression
@@ -120,7 +144,7 @@ expression returns [BigDecimal result]
                 {$result = evalBoolean($left.result, $right.result, $OR.text);}
             | LPAREN expression RPAREN {$result = $expression.result;}
             | READ LPAREN expression RPAREN {$result = $expression.result;}
-            | SQRT LPAREN expression RPAREN {$result = $expression.result;}
+            | SQRT LPAREN expression RPAREN {$result = sqrt($expression.result);}
             | SIN LPAREN expression RPAREN  {$result = sin($expression.result);}
             | COS LPAREN expression RPAREN  {$result = cos($expression.result);}
             | LOG LPAREN expression RPAREN  {$result = log($expression.result);}
@@ -230,3 +254,17 @@ SLCMNT      : '#'.*?'\n'       ->  skip;
 MLCMNT      : '/*'.*?'*/'       ->  skip;
 
 WS          : [ \t\r\n]+        ->  skip ;
+
+
+/*
+
+    Comments:
+        -> Basic expressions with variables
+        -> Boolean Expressions
+        -> Precedence
+    Special Expression: read and sqrt (implementation)
+        ->  Statements: expressions (print value on the screen when executed), print expressions
+        -> Math library functions: s, c, l, e (no need for a and j)
+
+
+ */
