@@ -142,17 +142,21 @@ expression returns [BigDecimal result]
                 {$result = evalBoolean($left.result, $right.result, $AND.text);}
             | left = expression OR right = expression
                 {$result = evalBoolean($left.result, $right.result, $OR.text);}
-            | LPAREN expression RPAREN {$result = $expression.result;}
-            | READ LPAREN expression RPAREN {$result = $expression.result;}
-            | SQRT LPAREN expression RPAREN {$result = sqrt($expression.result);}
-            | SIN LPAREN expression RPAREN  {$result = sin($expression.result);}
-            | COS LPAREN expression RPAREN  {$result = cos($expression.result);}
-            | LOG LPAREN expression RPAREN  {$result = log($expression.result);}
-            | EXP LPAREN expression RPAREN  {$result = exp($expression.result);}
-            | variable {$result = $variable.value;}
-            | variable EQUAL expression { varMap.put($variable.text, $expression.result);}
-            | number  {$result = $number.value; }
-            | SCALE EQUAL expression { setScale($expression.result.intValue()); }
+            | LPAREN expression RPAREN      { $result = $expression.result;}
+            | READ LPAREN expression RPAREN { $result = $expression.result;}
+            | SQRT LPAREN expression RPAREN { $result = sqrt($expression.result);}
+            | SIN LPAREN expression RPAREN  { $result = sin($expression.result);}
+            | COS LPAREN expression RPAREN  { $result = cos($expression.result);}
+            | LOG LPAREN expression RPAREN  { $result = log($expression.result);}
+            | EXP LPAREN expression RPAREN  { $result = exp($expression.result);}
+            | variable                      { $result = $variable.value;}
+            | variable EQUAL expression     { varMap.put($variable.text, $expression.result);}
+            | variable EQUAL read           {
+                                              $result = $read.value;
+                                              varMap.put($variable.text, $result);
+                                            }
+            | number                        { $result = $number.value; }
+            | SCALE EQUAL expression        { setScale($expression.result.intValue()); }
             ;
             
 
@@ -163,12 +167,15 @@ variable returns [BigDecimal value]
 number returns [BigDecimal value]
             : NUMBER {  $value = new BigDecimal($NUMBER.text); }
             ;
+read  returns [BigDecimal value]
+            : READ number {  $value = $number.value; }
+            ;
 
 /* Special functions */
 SCALE       : 'scale'
             ;
 
-READ        : 'read'
+READ        : 'read()' NEWLINE
             ;
 
 /* Boolean operators precedence (highest to lowest): !, &&, || */
