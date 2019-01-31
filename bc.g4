@@ -13,7 +13,6 @@ grammar Bc;
     //default precision is set to 20 with rounding mode down
     private MathContext mathContext = new MathContext(20, RoundingMode.DOWN); 
     Map<String, BigDecimal> varMap = new HashMap<String, BigDecimal>();
-
     public BigDecimal eval(BigDecimal left, BigDecimal right, String op){
         if(op.equals("^"))
             return left.pow(right.intValue());
@@ -109,6 +108,7 @@ grammar Bc;
 
     public void print(BigDecimal result){
         if(result == null) return;
+        varMap.put("last", result);
         System.out.println(result);    
     }
 
@@ -124,7 +124,7 @@ expression returns [BigDecimal result]
             | variable op = ( INC | DEC)    { $result = evalUnary($variable.text, $op.text, true);}
             | SUB variable                  { $result = eval(BigDecimal.ZERO, $variable.value, $SUB.text);}
             | left = expression POW right = expression 
-                                            {$result = eval($left.result, $right.result, $POW.text);}
+                                            { $result = eval($left.result, $right.result, $POW.text);}
             | left = expression op = (MUL | DIV) right = expression 
                                             { $result = eval($left.result, $right.result, $op.text);}
             | left = expression MOD right = expression
@@ -144,7 +144,6 @@ expression returns [BigDecimal result]
             | COS LPAREN expression RPAREN  { $result = cos($expression.result);}
             | LOG LPAREN expression RPAREN  { $result = log($expression.result);}
             | EXP LPAREN expression RPAREN  { $result = exp($expression.result);}
-            | variable                      { $result = $variable.value;}
             | variable op = (MUL | DIV | ADD | SUB | MOD | POW) EQUAL expression
                                             { varMap.put($variable.text, eval($variable.value, $expression.result, $op.text)); }
             | variable EQUAL expression     { varMap.put($variable.text, $expression.result);}
@@ -152,8 +151,10 @@ expression returns [BigDecimal result]
                                               $result = $read.value;
                                               varMap.put($variable.text, $result);
                                             }
-            | number                        { $result = $number.value; }
             | SCALE EQUAL expression        { setScale($expression.result.intValue()); }
+            | variable                      { $result = $variable.value;}
+            | number                        { $result = $number.value; }
+            | last                          { $result = $last.value; }
             ;
             
 
@@ -165,10 +166,11 @@ number returns [BigDecimal value]
             : NUMBER                        { $value = new BigDecimal($NUMBER.text); }
             ;
 read  returns [BigDecimal value]
-            : READ number                   {  $value = $number.value; }
+            : READ number                   { $value = $number.value; }
             ;
-
-
+last  returns [BigDecimal value]
+            : LAST                          { $value = varMap.getOrDefault($LAST.text, ZERO); }
+            ;
 /*
     TO DO: print expressions
     ->  Statements: expressions (print value on the screen when executed), 
@@ -180,6 +182,12 @@ SCALE       : 'scale'
             ;
 
 READ        : 'read()' NEWLINE
+            ;
+
+PRINT       : 'print'
+            ;
+
+LAST        : 'last'
             ;
 
 /* Boolean operators precedence (highest to lowest): !, &&, || */
