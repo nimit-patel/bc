@@ -108,13 +108,12 @@ grammar Bc;
 
     public void print(BigDecimal result){
         if(result == null) return;
-        varMap.put("last", result);
+        varMap.put("last", result); 
         System.out.println(result);    
     }
-
 }
 
-bc          : calc;
+bc          : calc ( ';' calc)* ';'?;
 
 calc        : expression                    { print($expression.result); }
             ;
@@ -147,7 +146,7 @@ expression returns [BigDecimal result]
             | variable op = (MUL | DIV | ADD | SUB | MOD | POW) EQUAL expression
                                             { varMap.put($variable.text, eval($variable.value, $expression.result, $op.text)); }
             | variable EQUAL expression     { varMap.put($variable.text, $expression.result);}
-            | variable EQUAL read           {
+            | variable EQUAL read           { 
                                               $result = $read.value;
                                               varMap.put($variable.text, $result);
                                             }
@@ -173,9 +172,7 @@ last  returns [BigDecimal value]
             ;
 /*
     TO DO: print expressions
-    ->  Statements: expressions (print value on the screen when executed), 
  */
-
  
 /* Special functions */
 SCALE       : 'scale'
@@ -254,7 +251,7 @@ RPAREN      : ')'
             ;
 
 /* Terminating character */
-SEMICOLON   : ';'
+TERMINATOR  : ';'
             ;
 
 /* Matches variables */
