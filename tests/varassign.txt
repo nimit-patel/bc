@@ -1,1 +1,3 @@
-a = 10
+a       # default value is zero
+a = 10  # assign 10 to a
+a       # a is 10 now
