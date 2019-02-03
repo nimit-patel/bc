@@ -31,10 +31,10 @@ DEC         : '--'
             ;
 
 /* Binary operators (highest to lowest): *, /, +, -*/
-ADD         : '+'
+PLUS        : '+'
             ;
 
-SUB         : '-'
+MINUS       : '-'
             ;
 
 DIV         : '/'

@@ -10,8 +10,9 @@ import lexerRules;
     private static final BigDecimal ZERO = BigDecimal.ZERO;
     private static final BigDecimal ONE = BigDecimal.ONE;
     private int scale = 0;
+    
     //default precision is set to 20 with rounding mode down
-    private MathContext mathContext = new MathContext(20, RoundingMode.DOWN); 
+    private MathContext mathContext = new MathContext(20, RoundingMode.HALF_EVEN); 
     Map<String, BigDecimal> varMap = new HashMap<String, BigDecimal>();
     public BigDecimal eval(BigDecimal left, BigDecimal right, String op){
         if(op.equals("^"))
@@ -24,7 +25,7 @@ import lexerRules;
             return left.multiply(right);
 
         if(op.equals("/"))
-            return left.divide(right, scale, RoundingMode.DOWN);
+            return left.divide(right, scale, RoundingMode.HALF_EVEN);
         
         if(op.equals("+"))
             return left.add(right);
@@ -78,10 +79,14 @@ import lexerRules;
 
     /* source: StackOverflow */
     public BigDecimal sqrt(BigDecimal num){
+        if(num.compareTo(ZERO) < 0){
+            System.out.println("Error: sqrt of negative number");
+            return null;
+        }
         if(num.equals(ZERO))
             return ZERO;
 
-        RoundingMode mode = RoundingMode.FLOOR;
+        RoundingMode mode = RoundingMode.HALF_EVEN;
         BigDecimal sqrt = new BigDecimal(1);
         BigDecimal store = new BigDecimal(num.toString());
         boolean first = true;
@@ -113,6 +118,11 @@ import lexerRules;
     }
 }
 
+/*
+    TO DO: print expressions
+ */
+
+
 bc          : equation+
             | EOF
             ;
@@ -126,14 +136,12 @@ calc        : expression                    { print($expression.result); }
 expression returns [BigDecimal result]
             : op = ( INC | DEC) variable    { $result = evalUnary($variable.text, $op.text, false);}
             | variable op = ( INC | DEC)    { $result = evalUnary($variable.text, $op.text, true);}
-            | SUB variable                  { $result = eval(BigDecimal.ZERO, $variable.value, $SUB.text);}
+            | MINUS variable                { $result = eval(BigDecimal.ZERO, $variable.value, $MINUS.text);}
             | left = expression POW right = expression 
                                             { $result = eval($left.result, $right.result, $POW.text);}
-            | left = expression op = (MUL | DIV) right = expression 
+            | left = expression op = (MUL | DIV | MOD) right = expression 
                                             { $result = eval($left.result, $right.result, $op.text);}
-            | left = expression MOD right = expression
-                                            { $result = eval($left.result, $right.result, $MOD.text);}
-            | left = expression op = (ADD | SUB) right = expression
+            | left = expression op = (PLUS | MINUS) right = expression
                                             { $result = eval($left.result, $right.result, $op.text);}
             | NOT expression
                                             { $result = evalBoolean($expression.result, $expression.result, $NOT.text);}
@@ -148,7 +156,7 @@ expression returns [BigDecimal result]
             | COS LPAREN expression RPAREN  { $result = cos($expression.result);}
             | LOG LPAREN expression RPAREN  { $result = log($expression.result);}
             | EXP LPAREN expression RPAREN  { $result = exp($expression.result);}
-            | variable op = (MUL | DIV | ADD | SUB | MOD | POW) EQUAL expression
+            | variable op = (MUL | DIV | PLUS | MINUS | MOD | POW) EQUAL expression
                                             { varMap.put($variable.text, eval($variable.value, $expression.result, $op.text)); }
             | variable EQUAL expression     { varMap.put($variable.text, $expression.result);}
             | variable EQUAL read           { 
@@ -158,10 +166,10 @@ expression returns [BigDecimal result]
             | SCALE EQUAL expression        { setScale($expression.result.intValue()); }
             | variable                      { $result = $variable.value;}
             | number                        { $result = $number.value; }
+            | MINUS number                  { $result = eval(BigDecimal.ZERO, $number.value, $MINUS.text); }
             | last                          { $result = $last.value; }
             ;
             
-
 variable returns [BigDecimal value] 
             : VARIABLE                      { $value = varMap.getOrDefault($VARIABLE.text, new BigDecimal(0)); }
             ;
@@ -175,7 +183,3 @@ read  returns [BigDecimal value]
 last  returns [BigDecimal value]
             : LAST                          { $value = varMap.getOrDefault($LAST.text, ZERO); }
             ;
-/*
-    TO DO: print expressions
- */
-
