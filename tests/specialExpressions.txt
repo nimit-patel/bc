@@ -1,0 +1,8 @@
+sqrt(23)    # 4
+sqrt(100)   # 10
+scale = 10
+sqrt(333)   # 18.2482875908
+x = read()
+25
+sqrt(x)     # 5.0000000000
+sqrt(-12)   # Error: sqrt of negative number
