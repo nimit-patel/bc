@@ -1,4 +1,4 @@
-grammar Bc;
+grammar Calculator;
 import lexerRules;
 
 @header {
@@ -121,8 +121,6 @@ import lexerRules;
 /*
     TO DO: print expressions
  */
-
-
 bc          : equation+
             | EOF
             ;
