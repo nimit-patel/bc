@@ -14,6 +14,7 @@ import lexerRules;
     //default precision is set to 20 with rounding mode down
     private MathContext mathContext = new MathContext(20, RoundingMode.HALF_EVEN); 
     Map<String, BigDecimal> varMap = new HashMap<String, BigDecimal>();
+    
     public BigDecimal eval(BigDecimal left, BigDecimal right, String op){
         if(op.equals("^"))
             return left.pow(right.intValue());
@@ -125,7 +126,8 @@ bc          : equation+
             | EOF
             ;
 
-equation    : calc ( ';' calc)* ';'? NEWLINE?
+equation    : calc ( TERMINATOR calc)* TERMINATOR? NEWLINE?
+            | PRINT calc COMMA? NEWLINE?
             ;
 
 calc        : expression                    { print($expression.result); }

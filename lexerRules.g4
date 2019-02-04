@@ -76,6 +76,9 @@ LPAREN      : '('
 RPAREN      : ')'
             ;
 
+COMMA       : ','
+            ;
+
 /* Terminating character */
 TERMINATOR  : ';'
             ;
