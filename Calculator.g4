@@ -7,31 +7,29 @@ import lexerRules;
 }
 
 @parser::members {
-    private static final BigDecimal ZERO = BigDecimal.ZERO;
-    private static final BigDecimal ONE = BigDecimal.ONE;
+    private final BigDecimal ZERO = BigDecimal.ZERO;
+    private final BigDecimal ONE = BigDecimal.ONE;
     private int scale = 0;
-    
-    //default precision is set to 20 with rounding mode down
-    private MathContext mathContext = new MathContext(20, RoundingMode.HALF_EVEN); 
+    private MathContext mathContext = new MathContext(0, RoundingMode.HALF_EVEN); 
     Map<String, BigDecimal> varMap = new HashMap<String, BigDecimal>();
     
     public BigDecimal eval(BigDecimal left, BigDecimal right, String op){
         if(op.equals("^"))
-            return left.pow(right.intValue());
+            return left.pow(right.intValue(), mathContext);
 
         if(op.equals("%"))
-            return left.remainder(right);
+            return left.remainder(right, mathContext);
 
         if(op.equals("*"))
-            return left.multiply(right);
+            return left.multiply(right, mathContext);
 
         if(op.equals("/"))
             return left.divide(right, scale, RoundingMode.HALF_EVEN);
         
         if(op.equals("+"))
-            return left.add(right);
+            return left.add(right, mathContext);
 
-        return left.subtract(right); 
+        return left.subtract(right, mathContext); 
     }
 
     public BigDecimal evalUnary(String var, String op, boolean isPost){
@@ -87,7 +85,7 @@ import lexerRules;
         if(num.equals(ZERO))
             return ZERO;
 
-        RoundingMode mode = RoundingMode.HALF_EVEN;
+        RoundingMode mode = RoundingMode.FLOOR;
         BigDecimal sqrt = new BigDecimal(1);
         BigDecimal store = new BigDecimal(num.toString());
         boolean first = true;
@@ -108,8 +106,16 @@ import lexerRules;
         return sqrt.setScale(scale, mode);
     }
 
-    public void setScale(int newScale){
+    public void setFunctionScale(){
+        if(scale < 20){
+            scale = 20;
+            mathContext = new MathContext(20, RoundingMode.HALF_EVEN);
+        }
+    }
+
+    public void setGlobalScale(int newScale){
         scale = newScale;
+        mathContext = new MathContext(newScale, RoundingMode.HALF_EVEN);
     }
 
     public void print(BigDecimal result){
@@ -119,15 +125,11 @@ import lexerRules;
     }
 }
 
-/*
-    TO DO: print expressions
- */
 bc          : equation+
-            | EOF
             ;
 
 equation    : calc ( TERMINATOR calc)* TERMINATOR? NEWLINE?
-            | PRINT calc COMMA? NEWLINE?
+            | PRINT calc COMMA? NEWLINE?    
             ;
 
 calc        : expression                    { print($expression.result); }
@@ -152,18 +154,18 @@ expression returns [BigDecimal result]
             | LPAREN expression RPAREN      { $result = $expression.result;}
             | READ LPAREN expression RPAREN { $result = $expression.result;}
             | SQRT LPAREN expression RPAREN { $result = sqrt($expression.result);}
-            | SIN LPAREN expression RPAREN  { $result = sin($expression.result);}
-            | COS LPAREN expression RPAREN  { $result = cos($expression.result);}
-            | LOG LPAREN expression RPAREN  { $result = log($expression.result);}
-            | EXP LPAREN expression RPAREN  { $result = exp($expression.result);}
+            | SIN LPAREN expression RPAREN  { $result = sin($expression.result); setFunctionScale();}
+            | COS LPAREN expression RPAREN  { $result = cos($expression.result); setFunctionScale();}
+            | LOG LPAREN expression RPAREN  { $result = log($expression.result); setFunctionScale();}
+            | EXP LPAREN expression RPAREN  { $result = exp($expression.result); setFunctionScale();}
             | variable op = (MUL | DIV | PLUS | MINUS | MOD | POW) EQUAL expression
                                             { varMap.put($variable.text, eval($variable.value, $expression.result, $op.text)); }
             | variable EQUAL expression     { varMap.put($variable.text, $expression.result);}
-            | variable EQUAL read           { 
-                                              $result = $read.value;
-                                              varMap.put($variable.text, $result);
+            | variable EQUAL READ LPAREN RPAREN NEWLINE expression
+                                            { 
+                                              varMap.put($variable.text, $expression.result);
                                             }
-            | SCALE EQUAL expression        { setScale($expression.result.intValue()); }
+            | SCALE EQUAL expression        { setGlobalScale($expression.result.intValue()); }
             | variable                      { $result = $variable.value;}
             | number                        { $result = $number.value; }
             | MINUS number                  { $result = eval(BigDecimal.ZERO, $number.value, $MINUS.text); }
@@ -177,9 +179,11 @@ variable returns [BigDecimal value]
 number returns [BigDecimal value]
             : NUMBER                        { $value = new BigDecimal($NUMBER.text); }
             ;
+
 read  returns [BigDecimal value]
             : READ number                   { $value = $number.value; }
             ;
+
 last  returns [BigDecimal value]
             : LAST                          { $value = varMap.getOrDefault($LAST.text, ZERO); }
             ;
