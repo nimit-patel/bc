@@ -8,8 +8,12 @@ Basic Calculator (bc) ANTLR4 grammar with embedded actions.
     Boolean Expressions (&&, ||, !)
     Precedence of (+,-,*,/,%, etc)
     Special Expression: read() and sqrt()
-    Statements: expressions value is printed on execution, print expressions
+    Statements: expressions value is printed on execution, print expresstions
     Math library functions: sin, cos, log, exp functions
+    
+    Note: New line is required after expression just like bc to  execute expressions.
+          print expressions prints new line after evaluating each expression for readability.
+          
 
 
 ##  Running the tests
