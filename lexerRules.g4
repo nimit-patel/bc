@@ -4,7 +4,7 @@ lexer grammar lexerRules;
 SCALE       : 'scale'
             ;
 
-READ        : 'read()' NEWLINE
+READ        : 'read'
             ;
 
 PRINT       : 'print'
@@ -90,10 +90,10 @@ VARIABLE    : [a-z]+[0-9]*;
 NUMBER      : [0-9]+('.'[0-9]+)?;
 
 /* Matches new line */
-NEWLINE     : '\r'?'\n';
+NEWLINE     : '\r\n';
 
 /* Mathces single line comment */
-SLCMNT      : '#'.*?'\r'?'\n'   ->  skip;
+SLCMNT      : '#'.*?'\r\n'      ->  skip;
 
 /* Matches multiline comment */
 MLCMNT      : '/*'.*?'*/'       ->  skip;
