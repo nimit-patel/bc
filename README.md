@@ -11,8 +11,7 @@ Basic Calculator (bc) ANTLR4 grammar with embedded actions.
     Statements: expressions value is printed on execution, print expresstions
     Math library functions: sin, cos, log, exp functions
     
-    Note: New line is required after expression just like bc to  execute expressions.
-          print expressions prints new line after evaluating each expression for readability.
+    Note: print expressions command prints new line after evaluating each expression for readability.
           
 
 

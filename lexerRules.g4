@@ -93,9 +93,9 @@ NUMBER      : [0-9]+('.'[0-9]+)?;
 NEWLINE     : '\r\n';
 
 /* Mathces single line comment */
-SLCMNT      : '#'.*?'\r\n'      ->  skip;
+SLCMNT      : '#'.*?'\r\n'          ->  skip;
 
 /* Matches multiline comment */
-MLCMNT      : '/*'.*?'*/'       ->  skip;
+MLCMNT      : '/*'.*?'*/''\r\n'?    ->  skip;
 
-WS          : [ \t\r\n]+        ->  skip ;
+WS          : [ \t\r\n]+            ->  skip ;

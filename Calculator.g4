@@ -10,6 +10,7 @@ import lexerRules;
     private final BigDecimal ZERO = BigDecimal.ZERO;
     private final BigDecimal ONE = BigDecimal.ONE;
     private int scale = 0;
+    private boolean isScaleSet = false;
     private MathContext mathContext = new MathContext(0, RoundingMode.HALF_EVEN); 
     Map<String, BigDecimal> varMap = new HashMap<String, BigDecimal>();
     
@@ -107,13 +108,15 @@ import lexerRules;
     }
 
     public void setFunctionScale(){
-        if(scale < 20){
+        if(!isScaleSet){
+            isScaleSet = true;
             scale = 20;
             mathContext = new MathContext(20, RoundingMode.HALF_EVEN);
         }
     }
 
     public void setGlobalScale(int newScale){
+        isScaleSet = true;
         scale = newScale;
         mathContext = new MathContext(newScale, RoundingMode.HALF_EVEN);
     }
@@ -126,6 +129,7 @@ import lexerRules;
 }
 
 bc          : equation+
+            | EOF
             ;
 
 equation    : calc ( TERMINATOR calc)* TERMINATOR? NEWLINE?
@@ -154,10 +158,10 @@ expression returns [BigDecimal result]
             | LPAREN expression RPAREN      { $result = $expression.result;}
             | READ LPAREN expression RPAREN { $result = $expression.result;}
             | SQRT LPAREN expression RPAREN { $result = sqrt($expression.result);}
-            | SIN LPAREN expression RPAREN  { $result = sin($expression.result); setFunctionScale();}
-            | COS LPAREN expression RPAREN  { $result = cos($expression.result); setFunctionScale();}
-            | LOG LPAREN expression RPAREN  { $result = log($expression.result); setFunctionScale();}
-            | EXP LPAREN expression RPAREN  { $result = exp($expression.result); setFunctionScale();}
+            | SIN LPAREN expression RPAREN  { setFunctionScale(); $result = sin($expression.result); }
+            | COS LPAREN expression RPAREN  { setFunctionScale(); $result = cos($expression.result); }
+            | LOG LPAREN expression RPAREN  { setFunctionScale(); $result = log($expression.result); }
+            | EXP LPAREN expression RPAREN  { setFunctionScale(); $result = exp($expression.result); }
             | variable op = (MUL | DIV | PLUS | MINUS | MOD | POW) EQUAL expression
                                             { varMap.put($variable.text, eval($variable.value, $expression.result, $op.text)); }
             | variable EQUAL expression     { varMap.put($variable.text, $expression.result);}
